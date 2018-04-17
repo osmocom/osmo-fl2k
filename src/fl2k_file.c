@@ -85,8 +85,6 @@ void fl2k_callback(fl2k_data_info_t *data_info)
 
 	data_info->sampletype_signed = 1;
 	data_info->r_buf = txbuf;
-	data_info->g_buf = txbuf;
-	data_info->b_buf = txbuf;
 
 	while (!do_exit && (left > 0)) {
 		r = fread(txbuf + (FL2K_BUF_LEN - left), 1, left, file);
