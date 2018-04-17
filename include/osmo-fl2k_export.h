@@ -39,7 +39,7 @@
 #  define __FL2K_IMPORT
 #endif
 
-#ifndef libosmo-fl2k_STATIC
+#ifndef libosmofl2k_STATIC
 #	ifdef fl2k_EXPORTS
 #	define FL2K_API __FL2K_EXPORT
 #	else
