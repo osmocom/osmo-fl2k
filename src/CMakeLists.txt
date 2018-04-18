@@ -76,7 +76,7 @@ endif()
 add_executable(fl2k_file fl2k_file.c)
 add_executable(fl2k_tcp fl2k_tcp.c)
 add_executable(fl2k_test fl2k_test.c)
-add_executable(fl2k_fm fl2k_fm.c)
+add_executable(fl2k_fm fl2k_fm.c rds_waveforms.c rds_mod.c)
 set(INSTALL_TARGETS libosmo-fl2k_shared libosmo-fl2k_static fl2k_file fl2k_tcp fl2k_test fl2k_fm)
 
 target_link_libraries(fl2k_file libosmo-fl2k_shared 
