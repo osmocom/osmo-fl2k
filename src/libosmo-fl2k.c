@@ -668,9 +668,11 @@ static int _fl2k_free_async_buffers(fl2k_dev_t *dev)
 		for (i = 0; i < dev->xfer_buf_num; ++i) {
 			if (dev->xfer_buf[i]) {
 				if (dev->use_zerocopy) {
+#if defined (__linux__) && LIBUSB_API_VERSION >= 0x01000105
 					libusb_dev_mem_free(dev->devh,
 							    dev->xfer_buf[i],
 							    dev->xfer_buf_len);
+#endif
 				} else {
 					free(dev->xfer_buf[i]);
 				}
