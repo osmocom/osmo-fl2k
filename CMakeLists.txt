@@ -104,9 +104,14 @@ add_custom_target(uninstall
 ########################################################################
 option(INSTALL_UDEV_RULES "Install udev rules for libosmo-fl2k" OFF)
 if (INSTALL_UDEV_RULES)
+    set(UDEV_RULES_PATH
+        "/etc/udev/rules.d"
+        CACHE STRING
+        "Target directory for udev rule installation. Ensure you have permissions to write to this directory."
+        )
     install (
         FILES osmo-fl2k.rules
-        DESTINATION "/etc/udev/rules.d"
+        DESTINATION ${UDEV_RULES_PATH}
         COMPONENT "udev"
         )
 else (INSTALL_UDEV_RULES)
