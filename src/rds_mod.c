@@ -109,7 +109,13 @@ int get_rds_ct_group(uint16_t *blocks)
 
 		utc = localtime(&now);
 
+		//'struct tm' has no member named 'tm_gmtoff' on Windows+MinGW
+		#if defined(__APPLE__) || defined(__FreeBSD__)
 		offset = utc->tm_gmtoff / (30 * 60);
+		#else
+		offset = time(NULL) / (30 * 60);
+		#endif
+
 		blocks[3] |= abs(offset);
 		if (offset < 0)
 			blocks[3] |= 0x20;

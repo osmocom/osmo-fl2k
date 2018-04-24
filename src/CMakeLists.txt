@@ -61,7 +61,7 @@ endif()
 ########################################################################
 # Setup libraries used in executables
 ########################################################################
-if(WIN32)
+if(WIN32 AND NOT MINGW)
 add_library(libgetopt_static STATIC
     getopt/getopt.c
 )
@@ -105,7 +105,7 @@ target_link_libraries(fl2k_test m)
 target_link_libraries(fl2k_fm m)
 endif()
 
-if(WIN32)
+if(WIN32 AND NOT MINGW)
 target_link_libraries(fl2k_file libgetopt_static)
 target_link_libraries(fl2k_tcp ws2_32 libgetopt_static)
 target_link_libraries(fl2k_test libgetopt_static)
@@ -115,6 +115,11 @@ set_property(TARGET fl2k_tcp APPEND PROPERTY COMPILE_DEFINITIONS "libosmo-fl2k_S
 set_property(TARGET fl2k_test APPEND PROPERTY COMPILE_DEFINITIONS "libosmo-fl2k_STATIC" )
 set_property(TARGET fl2k_fm APPEND PROPERTY COMPILE_DEFINITIONS "libosmo-fl2k_STATIC" )
 endif()
+
+if(MINGW)
+target_link_libraries(fl2k_tcp ws2_32)
+endif()
+
 ########################################################################
 # Install built library files & utilities
 ########################################################################
