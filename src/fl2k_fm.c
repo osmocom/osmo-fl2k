@@ -94,6 +94,8 @@ void usage(void)
 		"\t[-f FM deviation (default: 75000 Hz, WBFM)]\n"
 		"\t[-i input audio sample rate (default: 44100 Hz for mono FM)]\n"
 		"\t[-s samplerate in Hz (default: 100 MS/s)]\n"
+		"\t[--rds (enables RDS, forces audio sample rate to 228 kHz)]\n"
+		"\t[--stereo (enables stereo, requires audio sample rate >= 114 kHz)]\n"
 		"\tfilename (use '-' to read from stdin)\n\n"
 	);
 	exit(1);
