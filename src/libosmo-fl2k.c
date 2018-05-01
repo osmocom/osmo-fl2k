@@ -577,7 +577,10 @@ static int fl2k_alloc_submit_transfers(fl2k_dev_t *dev)
 		dev->xfer[i] = libusb_alloc_transfer(0);
 
 	dev->xfer_buf = malloc(dev->xfer_buf_num * sizeof(unsigned char *));
+	memset(dev->xfer_buf, 0, dev->xfer_buf_num * sizeof(unsigned char *));
+
 	dev->xfer_info = malloc(dev->xfer_buf_num * sizeof(fl2k_xfer_info_t));
+	memset(dev->xfer_info, 0, dev->xfer_buf_num * sizeof(fl2k_xfer_info_t));
 
 #if defined (__linux__) && LIBUSB_API_VERSION >= 0x01000105
 	fprintf(stderr, "Using %d zero-copy buffers\n", dev->xfer_buf_num);
@@ -587,17 +590,27 @@ static int fl2k_alloc_submit_transfers(fl2k_dev_t *dev)
 		dev->xfer_buf[i] = libusb_dev_mem_alloc(dev->devh, dev->xfer_buf_len);
 
 		if (!dev->xfer_buf[i]) {
-			fprintf(stderr, "Failed to allocate zerocopy"
-					" buffer for transfer %d\n",
-					 i);
+			fprintf(stderr, "Failed to allocate zero-copy "
+					"buffer for transfer %d\n", i);
 
-			// TODO: free dev_mem buffers again
 			dev->use_zerocopy = 0;
 			break;
 		}
 	}
+
+	/* zero-copy buffer allocation failed (partially or completely)
+	 * we need to free the buffers again if already allocated */
+	if (!dev->use_zerocopy) {
+		for (i = 0; i < dev->xfer_buf_num; ++i) {
+			if (dev->xfer_buf[i])
+				libusb_dev_mem_free(dev->devh,
+						    dev->xfer_buf[i],
+						    dev->xfer_buf_len);
+		}
+	}
 #endif
 
+	/* no zero-copy available, allocate buffers in userspace */
 	if (!dev->use_zerocopy) {
 		for (i = 0; i < dev->xfer_buf_num; ++i) {
 			dev->xfer_buf[i] = malloc(dev->xfer_buf_len);
