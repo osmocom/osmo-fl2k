@@ -583,7 +583,7 @@ static int fl2k_alloc_submit_transfers(fl2k_dev_t *dev)
 	memset(dev->xfer_info, 0, dev->xfer_buf_num * sizeof(fl2k_xfer_info_t));
 
 #if defined (__linux__) && LIBUSB_API_VERSION >= 0x01000105
-	fprintf(stderr, "Using %d zero-copy buffers\n", dev->xfer_buf_num);
+	fprintf(stderr, "Allocating %d zero-copy buffers\n", dev->xfer_buf_num);
 
 	dev->use_zerocopy = 1;
 	for (i = 0; i < dev->xfer_buf_num; ++i) {
@@ -591,7 +591,8 @@ static int fl2k_alloc_submit_transfers(fl2k_dev_t *dev)
 
 		if (!dev->xfer_buf[i]) {
 			fprintf(stderr, "Failed to allocate zero-copy "
-					"buffer for transfer %d\n", i);
+					"buffer for transfer %d\nFalling "
+					"back to buffers in userspace\n", i);
 
 			dev->use_zerocopy = 0;
 			break;
