@@ -145,10 +145,17 @@ int main(int argc, char **argv)
 	if (dev_index < 0)
 		exit(1);
 
-	file = fopen(filename, "rb");
-	if (!file) {
-		fprintf(stderr, "Failed to open %s\n", filename);
-		goto out;
+	if (strcmp(filename, "-") == 0) { /* Read samples from stdin */
+		file = stdin;
+#ifdef _WIN32
+		_setmode(_fileno(stdin), _O_BINARY);
+#endif
+	} else {
+		file = fopen(filename, "rb");
+		if (!file) {
+			fprintf(stderr, "Failed to open %s\n", filename);
+			return -ENOENT;
+		}
 	}
 
 	txbuf = malloc(FL2K_BUF_LEN);
