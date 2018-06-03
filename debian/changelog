@@ -1,0 +1,18 @@
+osmo-fl2k (0.1.0git) unstable; urgency=medium
+
+  * Osmocom debian recipes for nightly builds
+
+ -- Harald Welte <laforge@gnumonks.org>  Sun, 03 Jun 2018 16:13:07 +0200
+
+osmo-fl2k (0.1.0+20180423git9e79bde-2) unstable; urgency=medium
+
+  * debian/control: set team as maintainer
+  * debian/copyright: add some entries (Closes: #896832)
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Wed, 25 Apr 2018 19:28:07 +0200
+
+osmo-fl2k (0.1.0+20180423git9e79bde-1) unstable; urgency=medium
+
+  * Initial release.
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Tue, 24 Apr 2018 18:28:07 +0200

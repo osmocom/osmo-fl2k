@@ -1,0 +1,50 @@
+Source: osmo-fl2k
+Section: libs
+Priority: optional
+Maintainer: Debian Mobcom Maintainers <Debian-mobcom-maintainers@lists.alioth.debian.org>
+Uploaders: Thorsten Alteholz <debian@alteholz.de>
+Build-Depends: debhelper (>=11)
+	, pkg-config
+	, cmake
+	, libusb-1.0-0-dev
+Standards-Version: 4.1.4
+Vcs-Browser: https://salsa.debian.org/debian-mobcom-team/osmo-fl2k
+Vcs-Git: https://salsa.debian.org/debian-mobcom-team/osmo-fl2k.git
+Homepage: https://projects.osmocom.org/projects/osmo-fl2k
+
+Package: osmo-fl2k
+Section: net
+Architecture: any
+Multi-Arch: no
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: use a VGA USB adapter as DAC and SDR transmitter
+ This software allows one to use USB 3.0 to VGA adapters based on the
+ Fresco Logic FL2000 chip as general purpose DACs and SDR transmitter
+ generating a continuous stream of samples by avoiding the HSYNC and
+ VSYNC blanking intervals.
+
+Package: libosmo-fl2k0
+Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: use a VGA USB adapter as DAC and SDR transmitter - library
+ This software allows one to use USB 3.0 to VGA adapters based on the
+ Fresco Logic FL2000 chip as general purpose DACs and SDR transmitter
+ generating a continuous stream of samples by avoiding the HSYNC and
+ VSYNC blanking intervals.
+ .
+ This package provides the shared library.
+
+Package: libosmo-fl2k-dev
+Section: libdevel
+Architecture: any
+Depends: libosmo-fl2k0 (= ${binary:Version}), ${misc:Depends}
+Description: use a VGA USB adapter as DAC and SDR transmitter - development
+ This software allows one to use USB 3.0 to VGA adapters based on the
+ Fresco Logic FL2000 chip as general purpose DACs and SDR transmitter
+ generating a continuous stream of samples by avoiding the HSYNC and
+ VSYNC blanking intervals.
+ .
+ This package provides the development files.
