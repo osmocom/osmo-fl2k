@@ -3,7 +3,7 @@ Section: libs
 Priority: optional
 Maintainer: Debian Mobcom Maintainers <Debian-mobcom-maintainers@lists.alioth.debian.org>
 Uploaders: Thorsten Alteholz <debian@alteholz.de>
-Build-Depends: debhelper (>=11)
+Build-Depends: debhelper (>= 9.0.0~)
 	, pkg-config
 	, cmake
 	, libusb-1.0-0-dev
