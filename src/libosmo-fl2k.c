@@ -381,7 +381,11 @@ int fl2k_open(fl2k_dev_t **out_dev, uint32_t index)
 		return -1;
 	}
 
+#if LIBUSB_API_VERSION >= 0x01000106
+	libusb_set_option(dev->ctx, LIBUSB_OPTION_LOG_LEVEL, 3);
+#else
 	libusb_set_debug(dev->ctx, 3);
+#endif
 
 	dev->dev_lost = 1;
 
