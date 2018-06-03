@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+include(GNUInstallDirs)
+
 MACRO(LIBFL2K_APPEND_SRCS)
     LIST(APPEND libosmo-fl2k_srcs ${ARGV})
 ENDMACRO(LIBFL2K_APPEND_SRCS)
@@ -124,7 +126,7 @@ endif()
 # Install built library files & utilities
 ########################################################################
 install(TARGETS ${INSTALL_TARGETS}
-    LIBRARY DESTINATION ${LIB_INSTALL_DIR} # .so/.dylib file
-    ARCHIVE DESTINATION ${LIB_INSTALL_DIR} # .lib file
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so/.dylib file
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # .lib file
     RUNTIME DESTINATION bin              # .dll file
 )
