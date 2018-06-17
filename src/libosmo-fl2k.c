@@ -985,3 +985,104 @@ int fl2k_stop_tx(fl2k_dev_t *dev)
 
 	return FL2K_ERROR_BUSY;
 }
+
+int fl2k_i2c_read(fl2k_dev_t *dev, uint8_t i2c_addr, uint8_t reg_addr, uint8_t *data)
+{
+	int i, r, timeout = 1;
+	uint32_t reg;
+
+	if (!dev)
+		return FL2K_ERROR_INVALID_PARAM;
+
+	r = fl2k_read_reg(dev, 0x8020, &reg);
+	if (r < 0)
+		return r;
+
+	/* apply mask, clearing bit 30 disables periodic repetition of read */
+	reg &= 0x3ffc0000;
+
+	/* set I2C register and address, select I2C read (bit 7) */
+	reg |= (1 << 28) | (reg_addr << 8) | (1 << 7) | (i2c_addr & 0x7f);
+
+	r = fl2k_write_reg(dev, 0x8020, reg);
+	if (r < 0)
+		return r;
+
+	for (i = 0; i < 10; i++) {
+		sleep_ms(10);
+
+		r = fl2k_read_reg(dev, 0x8020, &reg);
+		if (r < 0)
+			return r;
+
+		/* check if operation completed */ 
+		if (reg & (1 << 31)) {
+			timeout = 0;
+			break;
+		}
+	}
+
+	if (timeout)
+		return FL2K_ERROR_TIMEOUT;
+
+	/* check if slave responded and all data was read */
+	if (reg & (0x0f << 24))
+		return FL2K_ERROR_NOT_FOUND;
+
+	/* read data from register 0x8024 */
+	return libusb_control_transfer(dev->devh, CTRL_IN, 0x40,
+				       0, 0x8024, data, 4, CTRL_TIMEOUT);
+}
+
+int fl2k_i2c_write(fl2k_dev_t *dev, uint8_t i2c_addr, uint8_t reg_addr, uint8_t *data)
+{
+	int i, r, timeout = 1;
+	uint32_t reg;
+
+	if (!dev)
+		return FL2K_ERROR_INVALID_PARAM;
+
+	/* write data to register 0x8028 */
+	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0x41,
+				    0, 0x8028, data, 4, CTRL_TIMEOUT);
+
+	if (r < 0)
+		return r;
+
+	r = fl2k_read_reg(dev, 0x8020, &reg);
+	if (r < 0)
+		return r;
+
+	/* apply mask, clearing bit 30 disables periodic repetition of read */
+	reg &= 0x3ffc0000;
+
+	/* set I2C register and address */
+	reg |= (1 << 28) | (reg_addr << 8) | (i2c_addr & 0x7f);
+
+	r = fl2k_write_reg(dev, 0x8020, reg);
+	if (r < 0)
+		return r;
+
+	for (i = 0; i < 10; i++) {
+		sleep_ms(10);
+
+		r = fl2k_read_reg(dev, 0x8020, &reg);
+		if (r < 0)
+			return r;
+
+		/* check if operation completed */ 
+		if (reg & (1 << 31)) {
+			timeout = 0;
+			break;
+		}
+	}
+
+	if (timeout)
+		return FL2K_ERROR_TIMEOUT;
+
+	/* check if slave responded and all data was written */
+	if (reg & (0x0f << 24))
+		return FL2K_ERROR_NOT_FOUND;
+
+	return FL2K_SUCCESS;
+}

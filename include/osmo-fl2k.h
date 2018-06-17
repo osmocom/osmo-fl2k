@@ -37,6 +37,7 @@ enum fl2k_error {
 	FL2K_ERROR_NO_DEVICE = -2,
 	FL2K_ERROR_NOT_FOUND = -5,
 	FL2K_ERROR_BUSY = -6,
+	FL2K_ERROR_TIMEOUT = -7,
 	FL2K_ERROR_NO_MEM = -11,
 };
 
@@ -120,6 +121,40 @@ FL2K_API int fl2k_start_tx(fl2k_dev_t *dev, fl2k_tx_cb_t cb,
  * \return 0 on success
  */
 FL2K_API int fl2k_stop_tx(fl2k_dev_t *dev);
+
+/*!
+ * Read 4 bytes via the FL2K I2C bus
+ *
+ * \param dev the device handle given by fl2k_open()
+ * \param i2c_addr address of the I2C device
+ * \param reg_addr start address of the 4 bytes to be read
+ * \param data pointer to byte array of size 4
+ * \return 0 on success
+ * \note A read operation will look like this on the bus:
+ *       START, I2C_ADDR(W), REG_ADDR,   REP_START, I2C_ADDR(R), DATA[0], STOP
+ *       START, I2C_ADDR(W), REG_ADDR+1, REP_START, I2C_ADDR(R), DATA[1], STOP
+ *       START, I2C_ADDR(W), REG_ADDR+2, REP_START, I2C_ADDR(R), DATA[2], STOP
+ *       START, I2C_ADDR(W), REG_ADDR+3, REP_START, I2C_ADDR(R), DATA[3], STOP
+ */
+FL2K_API int fl2k_i2c_read(fl2k_dev_t *dev, uint8_t i2c_addr,
+		           uint8_t reg_addr, uint8_t *data);
+
+/*!
+ * Write 4 bytes via the FL2K I2C bus
+ *
+ * \param dev the device handle given by fl2k_open()
+ * \param i2c_addr address of the I2C device
+ * \param reg_addr start address of the 4 bytes to be written
+ * \param data pointer to byte array of size 4
+ * \return 0 on success
+ * \note A write operation will look like this on the bus:
+ *       START, I2C_ADDR(W), REG_ADDR,   DATA[0], STOP
+ *       START, I2C_ADDR(W), REG_ADDR+1, DATA[1], STOP
+ *       START, I2C_ADDR(W), REG_ADDR+2, DATA[2], STOP
+ *       START, I2C_ADDR(W), REG_ADDR+3, DATA[3], STOP
+ */
+FL2K_API int fl2k_i2c_write(fl2k_dev_t *dev, uint8_t i2c_addr,
+			    uint8_t reg_addr, uint8_t *data);
 
 #ifdef __cplusplus
 }
