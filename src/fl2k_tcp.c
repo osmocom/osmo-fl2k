@@ -36,9 +36,12 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h> /* for TCP_NODELAY */
 #include <fcntl.h>
+#define sleep_ms(ms)	usleep(ms*1000)
 #else
+#include <windows.h>
 #include <winsock2.h>
 #include "getopt/getopt.h"
+#define sleep_ms(ms)	Sleep(ms)
 #endif
 
 #include "osmo-fl2k.h"
@@ -217,11 +220,7 @@ int main(int argc, char **argv)
 
 	fprintf(stderr, "Connecting to %s:%d...\n", addr, port);
 	while (connect(sock, (struct sockaddr *)&remote, sizeof(remote)) != 0) {
-#ifndef _WIN32
-		usleep(500000);
-#else
-		Sleep(0.5);
-#endif
+		sleep_ms(500);
 		if (do_exit)
 			goto out;
 	}
@@ -230,13 +229,8 @@ int main(int argc, char **argv)
 	fprintf(stderr, "Connected\n");
 	connected = 1;
 
-	while (!do_exit) {
-#ifndef _WIN32
-		usleep(500000);
-#else
-		Sleep(0.5);
-#endif
-	}
+	while (!do_exit)
+		sleep_ms(500);
 
 out:
 	free(txbuf);

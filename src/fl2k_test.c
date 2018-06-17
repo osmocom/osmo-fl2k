@@ -41,9 +41,11 @@
 
 #ifndef _WIN32
 #include <unistd.h>
+#define sleep_ms(ms)	usleep(ms*1000)
 #else
 #include <windows.h>
 #include "getopt/getopt.h"
+#define sleep_ms(ms)	Sleep(ms)
 #endif
 
 #include "osmo-fl2k.h"
@@ -290,17 +292,11 @@ int main(int argc, char **argv)
 	fprintf(stderr, "Reporting PPM error measurement every %u seconds...\n", ppm_duration);
 	fprintf(stderr, "Press ^C after a few minutes.\n");
 
-	while (!do_exit) {
-#ifndef _WIN32
-		usleep(500000);
-#else
-		Sleep(0.5);
-#endif
-	}
+	while (!do_exit)
+		sleep_ms(500);
 
-	if (do_exit) {
+	if (do_exit)
 		fprintf(stderr, "\nUser cancel, exiting...\n");
-	}
 
 exit:
 	fl2k_close(dev);

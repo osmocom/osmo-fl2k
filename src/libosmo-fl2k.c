@@ -25,14 +25,17 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
 #include <math.h>
 #include <libusb.h>
 #include <pthread.h>
+
+#ifndef _WIN32
+#include <unistd.h>
+#define sleep_ms(ms)	usleep(ms*1000)
+#else
+#include <windows.h>
+#define sleep_ms(ms)	Sleep(ms)
+#endif
 
 /*
  * All libusb callback functions should be marked with the LIBUSB_CALL macro
@@ -476,13 +479,8 @@ int fl2k_close(fl2k_dev_t *dev)
 
 	if(!dev->dev_lost) {
 		/* block until all async operations have been completed (if any) */
-		while (FL2K_INACTIVE != dev->async_status) {
-#ifdef _WIN32
-			Sleep(1);
-#else
-			usleep(1000);
-#endif
-		}
+		while (FL2K_INACTIVE != dev->async_status)
+			sleep_ms(100);
 
 		fl2k_deinit_device(dev);
 	}

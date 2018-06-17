@@ -28,11 +28,13 @@
 
 #ifndef _WIN32
 #include <unistd.h>
+#define sleep_ms(ms)	usleep(ms*1000)
 #else
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
 #include "getopt/getopt.h"
+#define sleep_ms(ms)	Sleep(ms)
 #endif
 
 #include "osmo-fl2k.h"
@@ -191,13 +193,8 @@ int main(int argc, char **argv)
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
 
-	while (!do_exit) {
-#ifndef _WIN32
-		usleep(500000);
-#else
-		Sleep(0.5);
-#endif
-	}
+	while (!do_exit)
+		sleep_ms(500);
 
 	fl2k_close(dev);
 
