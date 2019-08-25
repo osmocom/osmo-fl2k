@@ -95,7 +95,7 @@ void fl2k_callback(fl2k_data_info_t *data_info)
 			fprintf(stderr, "File Error\n");
 
 		if (feof(file)) {
-			if (repeat) {
+			if (repeat && (r > 0)) {
 				repeat_cnt++;
 				fprintf(stderr, "repeat %d\n", repeat_cnt);
 				rewind(file);
