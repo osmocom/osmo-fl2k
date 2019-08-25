@@ -777,6 +777,8 @@ static void *fl2k_usb_worker(void *arg)
 		}
 	}
 
+	/* wait for sample worker thread to finish before freeing buffers */
+	pthread_join(dev->sample_worker_thread, NULL);  
 	_fl2k_free_async_buffers(dev);
 	dev->async_status = next_status;
 
