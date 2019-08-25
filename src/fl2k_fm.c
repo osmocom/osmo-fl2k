@@ -153,17 +153,17 @@ typedef struct {
 	unsigned long int phase_slope;
 } dds_t;
 
-inline void dds_setphase(dds_t *dds, double phase)
+static inline void dds_setphase(dds_t *dds, double phase)
 {
 	dds->phase = phase * ANG_INCR;
 }
 
-inline double dds_getphase(dds_t *dds)
+static inline double dds_getphase(dds_t *dds)
 {
 	return dds->phase / ANG_INCR;
 }
 
-inline void dds_set_freq(dds_t *dds, double freq, double fslope)
+static inline void dds_set_freq(dds_t *dds, double freq, double fslope)
 {
 	dds->fslope = fslope;
 	dds->phase_step = (freq / dds->sample_freq) * 2 * M_PI * ANG_INCR;
@@ -196,7 +196,7 @@ dds_t dds_init(double sample_freq, double freq, double phase)
 	return dds;
 }
 
-inline int8_t dds_real(dds_t *dds)
+static inline int8_t dds_real(dds_t *dds)
 {
 	int tmp;
 
@@ -209,7 +209,7 @@ inline int8_t dds_real(dds_t *dds)
 	return sine_table[tmp];
 }
 
-inline void dds_real_buf(dds_t *dds, int8_t *buf, int count)
+static inline void dds_real_buf(dds_t *dds, int8_t *buf, int count)
 {
 	int i;
 	for (i = 0; i < count; i++)
@@ -267,7 +267,7 @@ static void *fm_worker(void *arg)
 	pthread_exit(NULL);
 }
 
-inline int writelen(int maxlen)
+static inline int writelen(int maxlen)
 {
 	int rp = readpos;
 	int len;
@@ -283,7 +283,7 @@ inline int writelen(int maxlen)
 	return r;
 }
 
-inline double modulate_sample(int lastwritepos, double lastfreq, double sample)
+static inline double modulate_sample(int lastwritepos, double lastfreq, double sample)
 {
 	double freq, slope;
 
