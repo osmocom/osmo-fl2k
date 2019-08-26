@@ -245,8 +245,8 @@ int main(int argc, char **argv)
 		sleep_ms(500);
 
 out:
-	free(txbuf);
 	fl2k_close(dev);
+	free(txbuf);
 	closesocket(s);
 #ifdef _WIN32
 	WSACleanup();
