@@ -419,6 +419,7 @@ void fm_modulator_stereo(int use_rds)
 void fl2k_callback(fl2k_data_info_t *data_info)
 {
 	if (data_info->device_error) {
+		fprintf(stderr, "Device error, exiting.\n");
 		do_exit = 1;
 		pthread_cond_signal(&fm_cond);
 	}

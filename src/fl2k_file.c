@@ -85,6 +85,12 @@ void fl2k_callback(fl2k_data_info_t *data_info)
 	int r, left = FL2K_BUF_LEN;
 	static uint32_t repeat_cnt = 0;
 
+	if (data_info->device_error) {
+		fprintf(stderr, "Device error, exiting.\n");
+		do_exit = 1;
+		return;
+	}
+
 	data_info->sampletype_signed = 1;
 	data_info->r_buf = txbuf;
 

@@ -107,6 +107,12 @@ void fl2k_callback(fl2k_data_info_t *data_info)
 	int r;
 	struct timeval tv = { 1, 0 };
 
+	if (data_info->device_error) {
+		fprintf(stderr, "Device error, exiting.\n");
+		do_exit = 1;
+		return;
+	}
+
 	if (!connected)
 		return;
 
@@ -122,6 +128,12 @@ void fl2k_callback(fl2k_data_info_t *data_info)
 
 		if (r) {
 			received = recv(sock, txbuf + (FL2K_BUF_LEN - left), left, 0);
+			if (!received) {
+				fprintf(stderr, "Connection was closed!\n");
+				fl2k_stop_tx(dev);
+				do_exit = 1;
+			}
+
 			left -= received;
 		}
 	}

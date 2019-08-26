@@ -529,6 +529,7 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
 	fl2k_xfer_info_t *next_xfer_info;
 	fl2k_dev_t *dev = (fl2k_dev_t *)xfer_info->dev;
 	struct libusb_transfer *next_xfer = NULL;
+	int r = 0;
 
 	if (LIBUSB_TRANSFER_COMPLETED == xfer->status) {
 		/* resubmit transfer */
@@ -541,8 +542,7 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
 
 				/* Submit next filled transfer */
 				next_xfer_info->state = BUF_SUBMITTED;
-				libusb_submit_transfer(next_xfer);
-
+				r = libusb_submit_transfer(next_xfer);
 				xfer_info->state = BUF_EMPTY;
 				pthread_cond_signal(&dev->buf_cond);
 			} else {
@@ -551,17 +551,21 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
 				 * stops to output data and hangs
 				 * (happens only in the hacked 'gapless'
 				 * mode without HSYNC and VSYNC)  */
-				libusb_submit_transfer(xfer);
+				r = libusb_submit_transfer(xfer);
 				pthread_cond_signal(&dev->buf_cond);
 				dev->underflow_cnt++;
 			}
 		}
-	} else if (LIBUSB_TRANSFER_CANCELLED != xfer->status) {
+	}
+
+	if (((LIBUSB_TRANSFER_CANCELLED != xfer->status) &&
+	     (LIBUSB_TRANSFER_COMPLETED != xfer->status)) ||
+	     (r == LIBUSB_ERROR_NO_DEVICE)) {
 			dev->dev_lost = 1;
 			fl2k_stop_tx(dev);
 			pthread_cond_signal(&dev->buf_cond);
-			fprintf(stderr, "cb transfer status: %d, "
-				"canceling...\n", xfer->status);
+			fprintf(stderr, "cb transfer status: %d, submit "
+				"transfer %d, canceling...\n", xfer->status, r);
 	}
 }
 
@@ -919,7 +923,6 @@ static void *fl2k_sample_worker(void *arg)
 	if (dev->dev_lost && dev->cb) {
 		data_info.device_error = 1;
 		dev->cb(&data_info);
-		fl2k_stop_tx(dev);
 	}
 
 	pthread_exit(NULL);

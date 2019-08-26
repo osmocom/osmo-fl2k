@@ -213,6 +213,12 @@ static void ppm_test(uint32_t len)
 
 void fl2k_callback(fl2k_data_info_t *data_info)
 {
+	if (data_info->device_error) {
+		fprintf(stderr, "Device error, exiting.\n");
+		do_exit = 1;
+		return;
+	}
+
 	/* drop first couple of callbacks until everything is settled */
 	if (cb_cnt > 20) {
 		ppm_test(FL2K_BUF_LEN);
@@ -222,7 +228,6 @@ void fl2k_callback(fl2k_data_info_t *data_info)
 		data_info->r_buf = buffer;
 		cb_cnt++;
 	}
-
 }
 
 int main(int argc, char **argv)
@@ -294,9 +299,6 @@ int main(int argc, char **argv)
 
 	while (!do_exit)
 		sleep_ms(500);
-
-	if (do_exit)
-		fprintf(stderr, "\nUser cancel, exiting...\n");
 
 exit:
 	fl2k_close(dev);
