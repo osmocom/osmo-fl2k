@@ -24,6 +24,11 @@ project(libosmo-fl2k C)
 
 include(GNUInstallDirs)
 
+# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES
+if(POLICY CMP0075)
+    cmake_policy(SET CMP0075 NEW)
+endif()
+
 #select the release build type by default to get optimization flags
 if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE "Release")
