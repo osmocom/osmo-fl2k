@@ -250,9 +250,9 @@ int fl2k_set_sample_rate(fl2k_dev_t *dev, uint32_t target_freq)
 				error = sample_clock - (double)target_freq;
 
 				/* Keep closest match */
-				if (fabsf(error) < last_error) {
+				if (fabs(error) < last_error) {
 					result_reg = reg;
-					last_error = fabsf(error);
+					last_error = fabs(error);
 				}
 			}
 		}
@@ -262,7 +262,7 @@ int fl2k_set_sample_rate(fl2k_dev_t *dev, uint32_t target_freq)
 	error = sample_clock - (double)target_freq;
 	dev->rate = sample_clock;
 
-	if (fabsf(error) > 1)
+	if (fabs(error) > 1)
 		fprintf(stderr, "Requested sample rate %d not possible, using"
 		                " %f, error is %f\n", target_freq, sample_clock, error); 
 

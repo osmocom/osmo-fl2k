@@ -38,8 +38,8 @@ extern double waveform_biphase[576];
 struct {
 	uint16_t pi;
 	int ta;
-	char ps[PS_LENGTH];
-	char rt[RT_LENGTH];
+	char ps[PS_LENGTH+1];
+	char rt[RT_LENGTH+1];
 } rds_params = { 0 };
 
 /* The RDS error-detection code generator polynomial is
