@@ -2,7 +2,7 @@
  * osmo-fl2k, turns FL2000-based USB 3.0 to VGA adapters into
  * low cost DACs
  *
- * Copyright (C) 2016-2018 by Steve Markgraf <steve@steve-m.de>
+ * Copyright (C) 2016-2020 by Steve Markgraf <steve@steve-m.de>
  *
  * SPDX-License-Identifier: GPL-2.0+
  *
@@ -444,10 +444,10 @@ int fl2k_open(fl2k_dev_t **out_dev, uint32_t index)
 		fprintf(stderr, "usb_claim_interface 0 error %d\n", r);
 		goto err;
 	}
-	r = libusb_claim_interface(dev->devh, 1);
 
+	r = libusb_set_interface_alt_setting(dev->devh, 0, 1);
 	if (r < 0) {
-		fprintf(stderr, "usb_claim_interface 1 error %d\n", r);
+		fprintf(stderr, "Error enabling IF 0 altsetting 1: %d\n", r);
 		goto err;
 	}
 
