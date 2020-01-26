@@ -447,8 +447,13 @@ int fl2k_open(fl2k_dev_t **out_dev, uint32_t index)
 
 	r = libusb_set_interface_alt_setting(dev->devh, 0, 1);
 	if (r < 0) {
-		fprintf(stderr, "Error enabling IF 0 altsetting 1: %d\n", r);
-		goto err;
+		fprintf(stderr, "Failed to switch interface 0 to "
+				"altsetting 1, trying to use interface 1\n");
+
+		r = libusb_claim_interface(dev->devh, 1);
+		if (r < 0) {
+			fprintf(stderr, "Could not claim interface 1: %d\n", r);
+		}
 	}
 
 	r = fl2k_init_device(dev);
