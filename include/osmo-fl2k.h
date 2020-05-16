@@ -70,6 +70,13 @@ typedef struct fl2k_dev fl2k_dev_t;
 #define FL2K_BUF_LEN		(1280 * 1024)
 #define FL2K_XFER_LEN		(FL2K_BUF_LEN * 3)
 
+/** Utility macros for 8 bit per sample mode */
+#define RGB332_TO_R(x) (((x) & 3) << 6)
+#define RGB332_TO_G(x) (((x) & 7) << 3)
+#define RGB332_TO_B(x) (((x) & 7) << 0)
+#define RGB332_TO_RGB(r, g, b) (TO_R(r) | TO_G(g) | TO_B(b))
+
+
 FL2K_API uint32_t fl2k_get_device_count(void);
 
 FL2K_API const char* fl2k_get_device_name(uint32_t index);
