@@ -54,6 +54,7 @@ typedef struct fl2k_data_info {
 	char *r_buf;			/* pointer to red buffer */
 	char *g_buf;			/* pointer to green buffer */
 	char *b_buf;			/* pointer to blue buffer */
+	char *raw_buf;			/* pointer to pre-arranged buffer */
 } fl2k_data_info_t;
 
 typedef struct fl2k_dev fl2k_dev_t;
@@ -88,6 +89,14 @@ FL2K_API int fl2k_close(fl2k_dev_t *dev);
  * \return 0 on success, -EINVAL on invalid rate
  */
 FL2K_API int fl2k_set_sample_rate(fl2k_dev_t *dev, uint32_t target_freq);
+
+/*!
+ * Set RGB332 sample format
+ *
+ * \param dev the device handle given by fl2k_open()
+ * \return 0 on success
+ */
+FL2K_API int fl2k_set_rgb332(fl2k_dev_t *dev);
 
 /*!
  * Get actual sample rate the device is configured to.
