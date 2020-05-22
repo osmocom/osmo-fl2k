@@ -74,7 +74,7 @@ typedef struct fl2k_dev fl2k_dev_t;
 #define RGB332_TO_R(x) (((x) & 3) << 6)
 #define RGB332_TO_G(x) (((x) & 7) << 3)
 #define RGB332_TO_B(x) (((x) & 7) << 0)
-#define RGB332_TO_RGB(r, g, b) (TO_R(r) | TO_G(g) | TO_B(b))
+#define RGB332_TO_RGB(r, g, b) (RGB332_TO_R(r) | RGB332_TO_G(g) | RGB332_TO_B(b))
 
 
 FL2K_API uint32_t fl2k_get_device_count(void);
