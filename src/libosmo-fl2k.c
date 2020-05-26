@@ -585,6 +585,10 @@ static int fl2k_alloc_submit_transfers(fl2k_dev_t *dev)
 {
 	unsigned int i;
 	int r = 0;
+	const char *incr_usbfs = "Please increase your allowed usbfs buffer"
+				 " size with the following command:\n"
+				 "echo 0 > /sys/module/usbcore/parameters/"
+				 "usbfs_memory_mb\n";
 
 	if (!dev)
 		return FL2K_ERROR_INVALID_PARAM;
@@ -625,8 +629,9 @@ static int fl2k_alloc_submit_transfers(fl2k_dev_t *dev)
 			}
 		} else {
 			fprintf(stderr, "Failed to allocate zero-copy "
-					"buffer for transfer %d\nFalling "
-					"back to buffers in userspace\n", i);
+					"buffer for transfer %d\n%sFalling "
+					"back to buffers in userspace\n",
+					i, incr_usbfs);
 			dev->use_zerocopy = 0;
 			break;
 		}
@@ -680,12 +685,8 @@ static int fl2k_alloc_submit_transfers(fl2k_dev_t *dev)
 		dev->xfer_info[i].state = BUF_SUBMITTED;
 
 		if (r < 0) {
-			fprintf(stderr, "Failed to submit transfer %i\n"
-					"Please increase your allowed " 
-					"usbfs buffer size with the "
-					"following command:\n"
-					"echo 0 > /sys/module/usbcore"
-					"/parameters/usbfs_memory_mb\n", i);
+			fprintf(stderr, "Failed to submit transfer %i\n%s",
+					i, incr_usbfs);
 			break;
 		}
 	}
