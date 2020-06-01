@@ -204,13 +204,6 @@ int fl2k_deinit_device(fl2k_dev_t *dev)
 	return r;
 }
 
-int fl2k_set_rgb332(fl2k_dev_t *dev)
-{
-	uint32_t reg;
-	fl2k_read_reg(dev, 0x8004, &reg);
-	return fl2k_write_reg(dev, 0x8004, reg | (1 << 25));
-}
-
 static double fl2k_reg_to_freq(uint32_t reg)
 {
 	double sample_clock, offset, offs_div;
@@ -921,20 +914,15 @@ static void *fl2k_sample_worker(void *arg)
 		xfer_info = (fl2k_xfer_info_t *)xfer->user_data;
 		out_buf = (char *)xfer->buffer;
 
-		if (data_info.raw_buf) {
-			/* Shove a pre-arranged buffer into the DACs */
-			memcpy(out_buf, data_info.raw_buf, dev->xfer_buf_len);
-		} else {
-			/* Re-arrange and copy bytes in buffer for DACs */
-			fl2k_convert_r(out_buf, data_info.r_buf, dev->xfer_buf_len,
-				       data_info.sampletype_signed ? 128 : 0);
+		/* Re-arrange and copy bytes in buffer for DACs */
+		fl2k_convert_r(out_buf, data_info.r_buf, dev->xfer_buf_len,
+			       data_info.sampletype_signed ? 128 : 0);
 
-			fl2k_convert_g(out_buf, data_info.g_buf, dev->xfer_buf_len,
-				       data_info.sampletype_signed ? 128 : 0);
+		fl2k_convert_g(out_buf, data_info.g_buf, dev->xfer_buf_len,
+			       data_info.sampletype_signed ? 128 : 0);
 
-			fl2k_convert_b(out_buf, data_info.b_buf, dev->xfer_buf_len,
-				       data_info.sampletype_signed ? 128 : 0);
-		}
+		fl2k_convert_b(out_buf, data_info.b_buf, dev->xfer_buf_len,
+			       data_info.sampletype_signed ? 128 : 0);
 
 		xfer_info->seq = buf_cnt++;
 		xfer_info->state = BUF_FILLED;
