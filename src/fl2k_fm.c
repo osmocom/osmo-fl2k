@@ -56,10 +56,12 @@ fl2k_dev_t *dev = NULL;
 int do_exit = 0;
 
 pthread_t fm_thread;
-pthread_mutex_t cb_mutex;
-pthread_mutex_t fm_mutex;
-pthread_cond_t cb_cond;
-pthread_cond_t fm_cond;
+pthread_mutex_t cb_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t fm_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t done_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cb_cond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t fm_cond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t done_cond = PTHREAD_COND_INITIALIZER;
 
 FILE *file;
 int8_t *txbuf = NULL;
@@ -110,6 +112,8 @@ sighandler(int signum)
 		fl2k_stop_tx(dev);
 		do_exit = 1;
 		pthread_cond_signal(&fm_cond);
+		pthread_cond_signal(&cb_cond);
+		pthread_cond_signal(&done_cond);
 		return TRUE;
 	}
 	return FALSE;
@@ -121,6 +125,8 @@ static void sighandler(int signum)
 	fl2k_stop_tx(dev);
 	do_exit = 1;
 	pthread_cond_signal(&fm_cond);
+	pthread_cond_signal(&cb_cond);
+	pthread_cond_signal(&done_cond);
 }
 #endif
 
@@ -141,7 +147,7 @@ static void sighandler(int signum)
 #define SIN_TABLE_LEN	(1 << SIN_TABLE_ORDER)
 #define ANG_INCR	(0xffffffff / DDS_2PI)
 
-int8_t sine_table[SIN_TABLE_LEN];
+uint8_t sine_table[SIN_TABLE_LEN];
 int sine_table_init = 0;
 
 typedef struct {
@@ -188,7 +194,7 @@ dds_t dds_init(double sample_freq, double freq, double phase)
 	if (!sine_table_init) {
 		double incr = 1.0 / (double)SIN_TABLE_LEN;
 		for (i = 0; i < SIN_TABLE_LEN; i++)
-			sine_table[i] = sin(incr * i * DDS_2PI) * 127;
+			sine_table[i] = sin(incr * i * DDS_2PI) * 127 + 128;
 
 		sine_table_init = 1;
 	}
@@ -249,6 +255,7 @@ static void *fm_worker(void *arg)
 				tmp_ptr = fmbuf;
 				fmbuf = txbuf;
 				txbuf = tmp_ptr;
+				pthread_cond_signal(&done_cond);
 				pthread_cond_wait(&cb_cond, &cb_mutex);
 			}
 
@@ -424,9 +431,11 @@ void fl2k_callback(fl2k_data_info_t *data_info)
 		pthread_cond_signal(&fm_cond);
 	}
 
-	pthread_cond_signal(&cb_cond);
 
-	data_info->sampletype_signed = 1;
+	pthread_cond_signal(&cb_cond);
+	pthread_cond_wait(&done_cond, &done_mutex);
+
+	data_info->sampletype_signed = 0;
 	data_info->r_buf = (char *)txbuf;
 }
 
@@ -542,9 +551,6 @@ int main(int argc, char **argv)
 
 	fprintf(stderr, "Samplerate:\t%3.2f MHz\n", (double)samp_rate/1000000);
 	fprintf(stderr, "Carrier:\t%3.2f MHz\n", (double)carrier_freq/1000000);
-	fprintf(stderr, "Frequencies:\t%3.2f MHz, %3.2f MHz\n", 
-					(double)((samp_rate - carrier_freq) / 1000000.0),
-					(double)((samp_rate + carrier_freq) / 1000000.0));
 
 	pthread_mutex_init(&cb_mutex, NULL);
 	pthread_mutex_init(&fm_mutex, NULL);
@@ -565,6 +571,11 @@ int main(int argc, char **argv)
 	}
 
 	pthread_attr_destroy(&attr);
+
+	r = fl2k_set_mode(dev, FL2K_MODE_SINGLECHAN);
+	if (r < 0)
+		fprintf(stderr, "WARNING: Failed to set singlechannel mode\n");
+
 	r = fl2k_start_tx(dev, fl2k_callback, NULL, 0);
 
 	/* Set the sample rate */
@@ -575,6 +586,10 @@ int main(int argc, char **argv)
 	/* read back actual frequency */
 	samp_rate = fl2k_get_sample_rate(dev);
 
+	//carrier_freq = samp_rate - 97000000;
+	fprintf(stderr, "Frequencies:\t%3.2f MHz, %3.2f MHz\n", 
+					(double)((samp_rate - carrier_freq) / 1000000.0),
+					(double)((samp_rate + carrier_freq) / 1000000.0));
 	/* Calculate needed constants */
 	carrier_per_signal = samp_rate / input_freq;
 
