@@ -89,6 +89,8 @@ struct fl2k_dev {
 	enum fl2k_async_status async_status;
 	int async_cancel;
 
+	fl2k_mode_t mode;
+	uint8_t enabled_chans;
 	int use_zerocopy;
 	int terminate;
 
@@ -123,9 +125,13 @@ static fl2k_dongle_t known_devices[] = {
 #define CTRL_TIMEOUT	300
 #define BULK_TIMEOUT	0
 
+#define R_EN		(1 << 0)
+#define G_EN		(1 << 1)
+#define B_EN		(1 << 2)
+
 static int fl2k_read_reg(fl2k_dev_t *dev, uint16_t reg, uint32_t *val)
 {
-	int r;
+	uint32_t r;
 	uint8_t data[4];
 
 	if (!dev || !val)
@@ -134,16 +140,19 @@ static int fl2k_read_reg(fl2k_dev_t *dev, uint16_t reg, uint32_t *val)
 	r = libusb_control_transfer(dev->devh, CTRL_IN, 0x40,
 				    0, reg, data, 4, CTRL_TIMEOUT);
 
-	if (r < 4)
+	if (r < sizeof(data)) {
 		fprintf(stderr, "Error, short read from register!\n");
+		return FL2K_ERROR_OTHER;
+	}
 
 	*val = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
 
-	return r;
+	return FL2K_SUCCESS;
 }
 
 static int fl2k_write_reg(fl2k_dev_t *dev, uint16_t reg, uint32_t val)
 {
+	uint32_t r;
 	uint8_t data[4];
 
 	if (!dev)
@@ -154,14 +163,71 @@ static int fl2k_write_reg(fl2k_dev_t *dev, uint16_t reg, uint32_t val)
 	data[2] = (val >> 16) & 0xff;
 	data[3] = (val >> 24) & 0xff;
 
-	return libusb_control_transfer(dev->devh, CTRL_OUT, 0x41,
-				       0, reg, data, 4, CTRL_TIMEOUT);
+	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0x41,
+				    0, reg, data, 4, CTRL_TIMEOUT);
+
+	if (r != sizeof(data))
+		return FL2K_ERROR_OTHER;
+
+	return FL2K_SUCCESS;
+}
+
+int fl2k_load_custom_palette(fl2k_dev_t *dev, uint32_t *palette)
+{
+	int i, r;
+	uint32_t reg = 0;
+
+	if (!dev)
+		return FL2K_ERROR_INVALID_PARAM;
+
+	/* write palette RAM */
+	for (i = 0; i < FL2K_PALETTE_SIZE; i++) {
+		r = fl2k_write_reg(dev, 0x805c, palette[i] << 8 | (i & 0xff));
+		if (r < 0)
+			fprintf(stderr, "Error writing palette entry %d!\n", i);
+	}
+
+	/* verify palette RAM */
+	for (i = 0; i < FL2K_PALETTE_SIZE; i++) {
+		/* for whatever reason there's an address offset of 1
+		 * when reading */
+		r = fl2k_write_reg(dev, 0x8060, (i+1) & 0xff );
+		r |= fl2k_read_reg(dev, 0x805c, &reg);
+
+		if (r < 0)
+			return FL2K_ERROR_OTHER;
+
+		if (reg != palette[i])
+			fprintf(stderr, "Palette entry %d mismatch: 0x%06x, "
+					"expected 0x%06x\n", i, reg, palette[i]);
+	}
+
+	return FL2K_SUCCESS;
+}
+
+int fl2k_set_enabled_channels(fl2k_dev_t *dev, uint8_t chan_mask)
+{
+	uint32_t palette[FL2K_PALETTE_SIZE];
+	uint8_t val;
+
+	/* generate linear 8 bit palette for desired DAC channels */
+	for (int i = 0; i < FL2K_PALETTE_SIZE; i++) {
+		val = i & 0xff;
+		palette[i]  = chan_mask & R_EN ? (i << 16) : 0;
+		palette[i] |= chan_mask & G_EN ? (i << 8) : 0;
+		palette[i] |= chan_mask & B_EN ?  i : 0;
+	}
+
+	return fl2k_load_custom_palette(dev, palette);
 }
 
 int fl2k_init_device(fl2k_dev_t *dev)
 {
+	int r;
+
 	if (!dev)
 		return FL2K_ERROR_INVALID_PARAM;
+
 
 	/* initialization */
 	fl2k_write_reg(dev, 0x8020, 0xdf0000cc);
@@ -559,6 +625,7 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
 				r = libusb_submit_transfer(xfer);
 				pthread_cond_signal(&dev->buf_cond);
 				dev->underflow_cnt++;
+				fprintf(stderr, "Resubmitted transfer!\n");
 			}
 		}
 	}
@@ -798,7 +865,7 @@ static void *fl2k_usb_worker(void *arg)
 	pthread_exit(NULL);
 }
 
-/* Buffer format conversion functions for R, G, B DACs */
+/* Buffer format conversion functions for R, G, B DACs (multichannel mode) */
 static inline void fl2k_convert_r(char *out,
 				  char *in,
 				  uint32_t len,
@@ -865,34 +932,65 @@ static inline void fl2k_convert_b(char *out,
 	}
 }
 
+/* Conversion function for single channel (256-color) mode */
+static inline void fl2k_convert_singlechan(char *out,
+					   char *in,
+					   uint32_t len,
+					   uint8_t offset)
+{
+	unsigned int i;
+
+	if (!in || !out)
+		return;
+
+	/* swap 32 bit words */
+	for (i = 0; i < len; i += 8) {
+		out[i+0] = in[i+4] + offset;
+		out[i+1] = in[i+5] + offset;
+		out[i+2] = in[i+6] + offset;
+		out[i+3] = in[i+7] + offset;
+		out[i+4] = in[i+0] + offset;
+		out[i+5] = in[i+1] + offset;
+		out[i+6] = in[i+2] + offset;
+		out[i+7] = in[i+3] + offset;
+	}
+}
+
 static void *fl2k_sample_worker(void *arg)
 {
 	int r = 0;
-	unsigned int i, j;
+	unsigned int i, callback_cnt;
 	fl2k_dev_t *dev = (fl2k_dev_t *)arg;
 	fl2k_xfer_info_t *xfer_info = NULL;
 	struct libusb_transfer *xfer = NULL;
 	char *out_buf = NULL;
-	fl2k_data_info_t data_info;
+	fl2k_data_info_t data_info[3];
 	uint32_t underflows = 0;
 	uint64_t buf_cnt = 0;
 
 	while (FL2K_RUNNING == dev->async_status) {
-		memset(&data_info, 0, sizeof(fl2k_data_info_t));
+		/* for backward API compatibility, the buffer size should
+		 * not change between single- and multichannel mode, thus
+		 * we call the callback 3 times for singlechannel mode to
+		 * get the required amount of data */
+		callback_cnt = (dev->mode == FL2K_MODE_SINGLECHAN) ? 3 : 1;
 
-		data_info.len = FL2K_BUF_LEN;
-		data_info.underflow_cnt = dev->underflow_cnt;
-		data_info.ctx = dev->cb_ctx;
+		for (i = 0; i < callback_cnt; i++) {
+			memset(&data_info[i], 0, sizeof(fl2k_data_info_t));
+			data_info[i].len = FL2K_BUF_LEN;
+			data_info[i].underflow_cnt = dev->underflow_cnt;
+			data_info[i].ctx = dev->cb_ctx;
+		}
+
+		/* call application callback to get samples */
+		if (dev->cb)
+			dev->cb(&data_info[0]);
 
 		if (dev->underflow_cnt > underflows) {
 			fprintf(stderr, "Underflow! Skipped %d buffers\n",
 					dev->underflow_cnt - underflows);
 			underflows = dev->underflow_cnt;
 		}
-
-		/* call application callback to get samples */
-		if (dev->cb)
-			dev->cb(&data_info);
 
 		xfer = fl2k_get_next_xfer(dev, BUF_EMPTY);
 
@@ -914,15 +1012,29 @@ static void *fl2k_sample_worker(void *arg)
 		xfer_info = (fl2k_xfer_info_t *)xfer->user_data;
 		out_buf = (char *)xfer->buffer;
 
-		/* Re-arrange and copy bytes in buffer for DACs */
-		fl2k_convert_r(out_buf, data_info.r_buf, dev->xfer_buf_len,
-			       data_info.sampletype_signed ? 128 : 0);
+		if (dev->mode == FL2K_MODE_SINGLECHAN) {
+			/* Convert a buffer to the singlechannel DAC format */
+			for (i = 0; i < callback_cnt; i++) {
+				fl2k_convert_singlechan(&out_buf[i*FL2K_BUF_LEN], data_info[i].r_buf,
+							FL2K_BUF_LEN,
+							data_info[i].sampletype_signed ? 128 : 0);
 
-		fl2k_convert_g(out_buf, data_info.g_buf, dev->xfer_buf_len,
-			       data_info.sampletype_signed ? 128 : 0);
+				/* We need to fetch two more buffers to get
+				 * the same amount of data as in multichannel mode */
+				if (dev->cb && (i < 2))
+					dev->cb(&data_info[i+1]);
+			}
+		} else {
+			/* Re-arrange and copy bytes in buffer for DACs */
+			fl2k_convert_r(out_buf, data_info[0].r_buf, dev->xfer_buf_len,
+				       data_info[0].sampletype_signed ? 128 : 0);
 
-		fl2k_convert_b(out_buf, data_info.b_buf, dev->xfer_buf_len,
-			       data_info.sampletype_signed ? 128 : 0);
+			fl2k_convert_g(out_buf, data_info[0].g_buf, dev->xfer_buf_len,
+				       data_info[0].sampletype_signed ? 128 : 0);
+
+			fl2k_convert_b(out_buf, data_info[0].b_buf, dev->xfer_buf_len,
+				       data_info[0].sampletype_signed ? 128 : 0);
+		}
 
 		xfer_info->seq = buf_cnt++;
 		xfer_info->state = BUF_FILLED;
@@ -930,13 +1042,55 @@ static void *fl2k_sample_worker(void *arg)
 
 	/* notify application if we've lost the device */
 	if (dev->dev_lost && dev->cb) {
-		data_info.device_error = 1;
-		dev->cb(&data_info);
+		data_info[0].device_error = 1;
+		dev->cb(&data_info[0]);
 	}
 
 	pthread_exit(NULL);
 }
 
+int fl2k_set_mode(fl2k_dev_t *dev, fl2k_mode_t mode)
+{
+	uint32_t reg;
+	int r = 0;
+
+	if (!dev)
+		return FL2K_ERROR_INVALID_PARAM;
+
+	if (FL2K_RUNNING == dev->async_status)
+		return FL2K_ERROR_BUSY;
+
+	if (dev->mode == mode)
+		return FL2K_SUCCESS;
+
+	r = fl2k_read_reg(dev, 0x8004, &reg);
+
+	if (r < 0)
+		return FL2K_ERROR_OTHER;
+
+	if (mode == FL2K_MODE_SINGLECHAN) {
+		/* enable 256 color palette mode */
+		reg |= (1 << 25) | (1 << 26);
+		r |= fl2k_set_enabled_channels(dev, R_EN);
+	} else if (mode == FL2K_MODE_MULTICHAN) {
+		reg &= ~((1 << 25) | (1 << 26));
+	} else {
+		return FL2K_ERROR_INVALID_PARAM;
+	}
+
+	r = fl2k_write_reg(dev, 0x8004, reg );
+
+	if (!r)
+		dev->mode = mode;
+
+	return r;
+}
+
+fl2k_mode_t fl2k_get_mode(fl2k_dev_t *dev)
+{
+	if (dev)
+		return dev->mode;
+}
 
 int fl2k_start_tx(fl2k_dev_t *dev, fl2k_tx_cb_t cb, void *ctx,
 		  uint32_t buf_num)

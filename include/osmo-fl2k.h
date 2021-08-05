@@ -39,6 +39,7 @@ enum fl2k_error {
 	FL2K_ERROR_BUSY = -6,
 	FL2K_ERROR_TIMEOUT = -7,
 	FL2K_ERROR_NO_MEM = -11,
+	FL2K_ERROR_OTHER = -9999,
 };
 
 typedef struct fl2k_data_info {
@@ -51,10 +52,16 @@ typedef struct fl2k_data_info {
 
 	/* filled in by application */
 	int sampletype_signed;		/* are samples signed or unsigned? */
-	char *r_buf;			/* pointer to red buffer */
+	char *r_buf;			/* pointer to red buffer (or singlechan buffer) */
 	char *g_buf;			/* pointer to green buffer */
 	char *b_buf;			/* pointer to blue buffer */
 } fl2k_data_info_t;
+
+typedef enum fl2k_mode {
+	FL2K_MODE_INVALID,
+	FL2K_MODE_SINGLECHAN,
+	FL2K_MODE_MULTICHAN
+} fl2k_mode_t;
 
 typedef struct fl2k_dev fl2k_dev_t;
 
@@ -68,6 +75,8 @@ typedef struct fl2k_dev fl2k_dev_t;
  **/
 #define FL2K_BUF_LEN		(1280 * 1024)
 #define FL2K_XFER_LEN		(FL2K_BUF_LEN * 3)
+
+#define FL2K_PALETTE_SIZE	256
 
 FL2K_API uint32_t fl2k_get_device_count(void);
 
@@ -100,6 +109,8 @@ FL2K_API uint32_t fl2k_get_sample_rate(fl2k_dev_t *dev);
 /* streaming functions */
 
 typedef void(*fl2k_tx_cb_t)(fl2k_data_info_t *data_info);
+
+FL2K_API int fl2k_set_mode(fl2k_dev_t *dev, fl2k_mode_t mode);
 
 /*!
  * Starts the tx thread. This function will block until
