@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: osmo-fl2k
-Source: git://git.osmocom.org/
+Source: https://gitea.osmocom.org/sdr/osmo-fl2k
 
 Files:     *
 Copyright: 2012-2018 Steve Markgraf <steve@steve-m.de>
