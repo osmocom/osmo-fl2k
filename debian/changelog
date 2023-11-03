@@ -1,3 +1,43 @@
+osmo-fl2k (0.2.0) unstable; urgency=medium
+
+  [ Harald Welte ]
+  * debian: Attempt to down-grade the debhelper version requirement
+  * debian: build-dep on dh-autoreconf for Ubuntu 16.04/Debian8
+
+  [ Steve Markgraf ]
+  * fix sleep durations on Windows
+  * lib: add I2C support
+  * lib: Add workaround for Linux usbfs mmap() bug
+
+  [ Oliver Smith ]
+  * contrib/jenkins.sh: osmo-fl2k build verification
+
+  [ Steve Markgraf ]
+  * fl2k_fm: make inline functions static
+  * fl2k_file: check read return value before repeating
+  * lib: wait for sample worker thread before freeing buffers
+  * improve exit handling on device removal
+  * fl2k_tcp: don't free buffer while lib still uses it
+  * fix compiler warnings
+  * set CMake policy CMP0075 if it exists
+  * lib: use interface 0 altsetting 1 instead of interface 1
+  * lib: fall back to iface 1 in case iface 0 altsetting 1 fails
+
+  [ Sergey Alirzaev ]
+  * lib: implement enabling RGB332 mode
+  * lib: added utility macros for rgb332 mode
+  * lib: fixed rgb332 macros
+
+  [ Steve Markgraf ]
+  * lib: reuse hint message when zero-copy buffer alloc fails
+  * lib: fix hang on exit
+  * lib: revert implementing RGB233 mode
+
+  [ Harald Welte ]
+  * update git URLs (git -> https; gitea)
+
+ -- Oliver Smith <osmith@sysmocom.de>  Fri, 03 Nov 2023 11:15:22 +0100
+
 osmo-fl2k (0.1.0git) unstable; urgency=medium
 
   * Osmocom debian recipes for nightly builds
